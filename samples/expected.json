@@ -1,0 +1,5 @@
+{
+  "A": {"pages": [["1", 9, "scan/A/1"], ["2", null, "scan/A/2"]], "range_um": 0, "missing_count": 1},
+  "B": {"pages": [["1", 7, "scan/B/1"], ["2", 11, "scan/B/2"]], "range_um": 4, "missing_count": 0},
+  "C": {"pages": [["1", 20, "scan/C/1"], ["2", 24, "scan/C/2"]], "range_um": 4, "missing_count": 0}
+}

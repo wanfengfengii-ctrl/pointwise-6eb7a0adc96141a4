@@ -1,0 +1,15 @@
+{
+  "registrations": [["A", ["1", "2"]], ["B", ["1"]]],
+  "arrivals": {"A": [["1", "scan/A/1", 7], ["2", "scan/A/2", 20]], "B": [["1", "scan/B/1", 11]]},
+  "after_page": "1",
+  "expected_v1": {
+    "missing_before": ["2"],
+    "issue_error": "OUT_OF_ORDER",
+    "A": {"batch_id": "A", "pages": [["1", 7, "scan/A/1"], ["2", 20, "scan/A/2"]], "range_um": 13, "missing_count": 0}
+  },
+  "expected_split": [
+    {"batch_id": "A", "segment": "前段", "pages": [["1", 7, "scan/A/1"]], "range_um": 0, "missing_count": 0},
+    {"batch_id": "A", "segment": "后段", "pages": [["2", 20, "scan/A/2"]], "range_um": 0, "missing_count": 0},
+    {"batch_id": "B", "segment": null, "pages": [["1", 11, "scan/B/1"]], "range_um": 0, "missing_count": 0}
+  ]
+}
