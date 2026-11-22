@@ -1,6 +1,7 @@
 import sqlite3
 from dataclasses import dataclass
 
+from archive.migration import legacy_table_rebuild, table_has_column
 from process.results import StagedId
 
 
@@ -17,19 +18,51 @@ def initialize_receipt_store(db: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS issue_receipts (
             receipt_id INTEGER PRIMARY KEY,
             record_id INTEGER NOT NULL UNIQUE REFERENCES archive_index(record_id),
-            batch_id TEXT NOT NULL UNIQUE REFERENCES registrations(batch_id),
+            batch_id TEXT NOT NULL REFERENCES registrations(batch_id),
+            part_id INTEGER UNIQUE REFERENCES batch_parts(part_id),
             slot INTEGER NOT NULL REFERENCES process_slots(slot),
             generation INTEGER NOT NULL CHECK (generation > 0),
-            UNIQUE (slot, generation)
+            UNIQUE (slot, generation),
+            UNIQUE (part_id)
         )
+    ''')
+    _migrate_legacy_receipts(db)
+    db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS issue_whole_batch_once
+        ON issue_receipts(batch_id) WHERE part_id IS NULL
     ''')
 
 
+def _migrate_legacy_receipts(db: sqlite3.Connection) -> None:
+    if table_has_column(db, 'issue_receipts', 'part_id'):
+        return
+    with legacy_table_rebuild(db):
+        db.execute('ALTER TABLE issue_receipts RENAME TO issue_receipts_legacy')
+        db.execute('''
+            CREATE TABLE issue_receipts (
+                receipt_id INTEGER PRIMARY KEY,
+                record_id INTEGER NOT NULL UNIQUE REFERENCES archive_index(record_id),
+                batch_id TEXT NOT NULL REFERENCES registrations(batch_id),
+                part_id INTEGER UNIQUE REFERENCES batch_parts(part_id),
+                slot INTEGER NOT NULL REFERENCES process_slots(slot),
+                generation INTEGER NOT NULL CHECK (generation > 0),
+                UNIQUE (slot, generation),
+                UNIQUE (part_id)
+            )
+        ''')
+        db.execute('''
+            INSERT INTO issue_receipts(receipt_id, record_id, batch_id, part_id, slot, generation)
+            SELECT receipt_id, record_id, batch_id, NULL, slot, generation FROM issue_receipts_legacy
+        ''')
+        db.execute('DROP TABLE issue_receipts_legacy')
+
+
 def insert_receipt(db: sqlite3.Connection, record_id: int, batch_id: str,
-                   staged_id: StagedId) -> IssueReceipt:
+                   staged_id: StagedId, part_id: int | None = None) -> IssueReceipt:
     inserted = db.execute('''
-        INSERT INTO issue_receipts(record_id, batch_id, slot, generation) VALUES (?, ?, ?, ?)
-    ''', (record_id, batch_id, staged_id.slot, staged_id.generation))
+        INSERT INTO issue_receipts(record_id, batch_id, part_id, slot, generation)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (record_id, batch_id, part_id, staged_id.slot, staged_id.generation))
     return IssueReceipt(inserted.lastrowid, record_id, batch_id, staged_id)
 
 

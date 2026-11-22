@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from archive.database import StationError, is_storage_id
 from capture.pages import MeasuredPage
@@ -10,6 +10,7 @@ class ThicknessResult:
     frozen_id: int
     pages: tuple[MeasuredPage, ...]
     range_um: int | None
+    part_frozen_id: int | None = field(default=None)
 
     @property
     def missing_count(self) -> int:

@@ -25,6 +25,11 @@ def next_unissued_batch(db: sqlite3.Connection, frontier: int | None = None) -> 
 
 
 def advance_frontier(db: sqlite3.Connection, previous: int, position: int) -> None:
+    if position == previous:
+        # A front segment closes only itself; the parent remains the head.
+        if current_frontier(db) != previous:
+            raise StationError('FRONTIER_CHANGED', str(previous))
+        return
     update = db.execute('''
         UPDATE issue_order SET issued_through = ?
         WHERE singleton = 1 AND issued_through = ? AND issued_through < ?

@@ -38,6 +38,13 @@ def find_registration(db: sqlite3.Connection, batch_id: str) -> BatchRegistratio
     return _read_registration(row)
 
 
+def find_registration_at_position(db: sqlite3.Connection, position: int) -> BatchRegistration | None:
+    row = db.execute('''
+        SELECT position, batch_id, manifest FROM registrations WHERE position = ?
+    ''', (position,)).fetchone()
+    return _read_registration(row)
+
+
 def first_registration_after(db: sqlite3.Connection, position: int) -> BatchRegistration | None:
     row = db.execute('''
         SELECT position, batch_id, manifest FROM registrations

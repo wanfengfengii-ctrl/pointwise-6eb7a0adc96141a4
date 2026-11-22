@@ -37,6 +37,7 @@ def initialize_station(db: sqlite3.Connection) -> None:
     from capture.batches import initialize_batch_store
     from capture.freeze import initialize_freeze_store
     from capture.pages import initialize_page_store
+    from capture.parts import initialize_part_store
     from issue.order import initialize_issue_order
     from issue.receipts import initialize_receipt_store
     from process.slots import initialize_slot_store
@@ -45,16 +46,20 @@ def initialize_station(db: sqlite3.Connection) -> None:
     if db.in_transaction:
         raise StationError('TRANSACTION_ACTIVE', 'initialize an idle station connection')
     db.execute('PRAGMA foreign_keys = ON')
-    with station_transaction(db):
-        initialize_batch_store(db)
-        initialize_page_store(db)
-        initialize_freeze_store(db)
-        initialize_slot_store(db)
-        initialize_loan_store(db)
-        initialize_issue_order(db)
-        initialize_record_index(db)
-        initialize_record_store(db)
-        initialize_receipt_store(db)
+    # Table rebuilds for older working libraries manage their own
+    # transactions so SQLite can toggle foreign keys around the migration.
+    initialize_batch_store(db)
+    initialize_page_store(db)
+    initialize_part_store(db)
+    initialize_freeze_store(db)
+    initialize_slot_store(db)
+    initialize_loan_store(db)
+    initialize_issue_order(db)
+    initialize_record_index(db)
+    initialize_record_store(db)
+    initialize_receipt_store(db)
+    if db.in_transaction:
+        db.commit()
 
 
 def open_station_database(path: str | PathLike[str]) -> sqlite3.Connection:

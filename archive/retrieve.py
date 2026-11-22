@@ -14,6 +14,7 @@ class RetrievedRecord:
     record_id: int
     result: ThicknessResult
     receipt: IssueReceipt
+    part_id: int | None = None
 
 
 def get(db: sqlite3.Connection, record_id: int) -> RetrievedRecord:
@@ -26,4 +27,4 @@ def get(db: sqlite3.Connection, record_id: int) -> RetrievedRecord:
         if result is None or receipt is None:
             raise StationError('ARCHIVE_INCOMPLETE', str(key.record_id))
         check_record_binding(key, result, receipt)
-        return RetrievedRecord(key.record_id, result, receipt)
+        return RetrievedRecord(key.record_id, result, receipt, key.part_id)
